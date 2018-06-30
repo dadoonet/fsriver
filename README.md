@@ -625,7 +625,8 @@ Here is a list of Local FS settings (under `fs.` prefix)`:
 | `fs.continue_on_error`           | `false`       | [Continue on File Permission Error](#continue-on-error) (from 2.3)                |
 | `fs.pdf_ocr`                     | `true`        | [Run OCR on PDF documents](#ocr-integration) (from 2.3)                           |
 | `fs.indexed_chars`               | `100000.0`    | [Extracted characters](#extracted-characters)                                     |
-| `fs.checksum`                    | `null`        | [File Checksum](#file-checksum)                                                   |
+| `fs.checksum`                    | `null`        | [File Checksum](#file-checksum)
+| `fs.custom_tika_parsers`         | `null`        | [Custom Tika Parsers](#custom-tika-parsers)   |
 
 #### Root directory
 
@@ -1201,6 +1202,182 @@ to compute the checksum, such as `MD5` or `SHA-1`.
 }
 ```
 
+#### Custom Tika Parsers
+
+It might occur that one or more existing Tika parsers do not provide the intended information, or just do not exist.
+This setting allows to use a custom parser instead.
+The parsers must be provided as a .jar, but does not need to be on any classpath.
+Note that this is an array. Here an example for just one:
+
+```json
+{
+  "name": "test",
+  "fs": {
+    "custom_tika_parsers": [
+      {
+        "class_name": "org.me.MyParser",
+        "path_to_jar": "/some/full/path/to/myParser-0.0.1-SNAPSHOT.jar",
+        "mime_types": ["application/dns", "or-another-mimetype-from-tika"]
+      }
+    ]
+  }
+}
+```
+
+Some info about creating a custom parser is available [here](https://tika.apache.org/1.17/parser_guide.html)
+Or use a existing parser as a blueprint. Make sure to choose the correct branch.
+At the time of this writing fscrawler uses Tika 1.17, while on github the main Tika branch is 2.x.
+The parsers from ["branch_1x"](https://github.com/apache/tika/tree/branch_1x/tika-parsers/src/main/java/org/apache/tika/parser) should work fine.
+
+To build the custom parser separately, a pom file can be derived from the tika-parsers [pom.xml](https://github.com/apache/tika/blob/branch_1x/tika-parsers/pom.xml).
+Probably a lot can be left out. Here is an example which requires fontbox.
+(The exclusions are copied 1:1 from fscrawler's pom.xml, to be on the safe side)
+
+<details><summary>Example pom.xml</summary>
+<p>
+
+
+```
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.me</groupId>
+    <artifactId>myParser</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <tika.version>1.17</tika.version>
+        <fontbox.version>2.0.8</fontbox.version>
+    </properties>
+
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <!--<testSourceDirectory>test</testSourceDirectory>-->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <configuration>
+                    <doclint>all,-missing,-accessibility</doclint>
+                    <quiet>true</quiet>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers</artifactId>
+            <version>${tika.version}</version>
+            <exclusions>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>netcdf</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>cdm</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>httpservices</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>grib</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>netcdf4</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>com.uwyn</groupId>
+                    <artifactId>jhighlight</artifactId>
+                </exclusion>
+                <!-- ES core already has these -->
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-debug-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging-api</artifactId>
+                </exclusion>
+                <!-- Must be removed because it conflicts with Jersey (another JaxRS implementation) -->
+                <exclusion>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-rt-rs-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>fontbox</artifactId>
+            <version>${fontbox.version}</version>
+            <exclusions>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>netcdf</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>cdm</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>httpservices</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>grib</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>edu.ucar</groupId>
+                    <artifactId>netcdf4</artifactId>
+                </exclusion>
+                <!-- Not Apache2 License compatible -->
+                <exclusion>
+                    <groupId>com.uwyn</groupId>
+                    <artifactId>jhighlight</artifactId>
+                </exclusion>
+                <!-- ES core already has these -->
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-debug-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging-api</artifactId>
+                </exclusion>
+                <!-- Must be removed because it conflicts with Jersey (another JaxRS implementation) -->
+                <exclusion>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-rt-rs-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+</p>
+</details>
 
 ### SSH settings
 

@@ -22,9 +22,13 @@ package fr.pilato.elasticsearch.crawler.fs.settings;
 import fr.pilato.elasticsearch.crawler.fs.framework.Percentage;
 import fr.pilato.elasticsearch.crawler.fs.framework.TimeValue;
 import fr.pilato.elasticsearch.crawler.fs.test.framework.AbstractFSCrawlerTestCase;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -40,6 +44,13 @@ public class FsSettingsParserTest extends AbstractFSCrawlerTestCase {
     private static final Ocr OCR_FULL = Ocr.builder().setLanguage("eng").build();
 
     private static final Fs FS_EMPTY = Fs.builder().build();
+
+    private static final CustomTikaParser CTS = CustomTikaParser.builder()
+            .setClassName("org.test.aParser")
+            .setPathToJar("./a_parser.jar")
+            .setMimeTypes(new ArrayList<>(Arrays.asList("text/json")))
+            .build();
+
     private static final Fs FS_FULL = Fs.builder()
             .setUrl("/path/to/docs")
             .setStoreSource(true)
@@ -53,7 +64,9 @@ public class FsSettingsParserTest extends AbstractFSCrawlerTestCase {
             .setUpdateRate(TimeValue.timeValueMinutes(5))
             .setIndexContent(true)
             .setOcr(OCR_FULL)
+            .setTikaCustomParsers(new ArrayList<>(Arrays.asList(CTS)))
             .build();
+
     private static final Elasticsearch ELASTICSEARCH_EMPTY = Elasticsearch.builder().build();
     private static final Elasticsearch ELASTICSEARCH_FULL = Elasticsearch.builder()
             .addNode(Elasticsearch.Node.builder()
@@ -88,7 +101,8 @@ public class FsSettingsParserTest extends AbstractFSCrawlerTestCase {
 
         logger.info("-> testing settings: [{}]", json);
         FsSettings generated = FsSettingsParser.fromJson(json);
-        assertThat(generated, is(source));
+        Matcher mmatch = is(source);
+        assertThat(generated, mmatch);
     }
 
     @Test

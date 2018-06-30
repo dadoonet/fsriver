@@ -22,17 +22,20 @@ package fr.pilato.elasticsearch.crawler.fs.tika;
 
 import fr.pilato.elasticsearch.crawler.fs.settings.Fs;
 import fr.pilato.elasticsearch.crawler.fs.settings.FsSettings;
+import fr.pilato.elasticsearch.crawler.fs.settings.CustomTikaParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.config.ServiceLoader;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.language.detect.LanguageDetector;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.apache.tika.mime.MediaTypeRegistry;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
+import org.apache.tika.parser.ParserDecorator;
 import org.apache.tika.parser.external.ExternalParser;
 import org.apache.tika.parser.ocr.TesseractOCRConfig;
 import org.apache.tika.parser.ocr.TesseractOCRParser;
@@ -43,7 +46,9 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.*;
 
 import static org.apache.tika.langdetect.OptimaizeLangDetector.getDefaultLanguageDetector;
 
@@ -94,11 +99,47 @@ public class TikaInstance {
                         Collections.singletonList(TesseractOCRParser.class));
             }
 
-            Parser PARSERS[] = new Parser[2];
-            PARSERS[0] = defaultParser;
-            PARSERS[1] = pdfParser;
+            // load custom parsers if defined in config
+            if (fs.getCustomTikaParsers().size() > 0) {
+                Integer counter = 0;
+                Parser PARSERS[] = new Parser[fs.getCustomTikaParsers().size()+2];
 
-            parser = new AutoDetectParser(PARSERS);
+                // to collect all Mediatypes handled by custom parser to exclude them form the DefaultParser
+                List<MediaType> excludeMediaTypes = new ArrayList<MediaType>();
+
+
+                for (CustomTikaParser customTikaParser : fs.getCustomTikaParsers()) {
+                    counter += 1;
+                    try {
+                        URL[] jarUrl = { new URL("jar:file:" + customTikaParser.getPathToJar()+"!/") };
+                        URLClassLoader urlClassLoader = URLClassLoader.newInstance(jarUrl);
+                        Class customParserClass = urlClassLoader.loadClass(customTikaParser.getClassName());
+                        Parser customParser = (Parser) customParserClass.newInstance();
+                        String[] customMimeStrings = new String[customTikaParser.getMimeTypes().size()];
+                        Set<MediaType> customMediaTypes = MediaType.set(customTikaParser.getMimeTypes().toArray(customMimeStrings));
+                        excludeMediaTypes.addAll(customMediaTypes);
+                        Parser customParserDecorated = ParserDecorator.withTypes(customParser, customMediaTypes);
+                        PARSERS[counter] = customParserDecorated;
+
+                    } catch (IOException|ClassNotFoundException|InstantiationException|IllegalAccessException e) {
+                        logger.error("Caught {}: {}", e.getClass().getSimpleName(), e.getMessage());
+                    }
+                }
+                if (excludeMediaTypes.size() > 0) {
+                    MediaType[] excludedMediaTypeSet = new MediaType[excludeMediaTypes.size()];
+                    PARSERS[0] = ParserDecorator.withoutTypes(defaultParser, new HashSet<MediaType>(excludeMediaTypes));
+                } else {
+                    PARSERS[0] = defaultParser;
+                }
+                PARSERS[counter+1] = pdfParser;
+                parser = new AutoDetectParser(PARSERS);
+            } else {
+                Parser PARSERS[] = new Parser[2];
+                PARSERS[0] = defaultParser;
+                PARSERS[1] = pdfParser;
+                parser = new AutoDetectParser(PARSERS);
+            }
+
         }
 
     }
