@@ -58,6 +58,7 @@ public class Fs {
     private Ocr ocr = new Ocr();
     private ByteSizeValue ignoreAbove = null;
     private boolean followSymlinks = false;
+    private boolean skipTika = false;
 
     public static Builder builder() {
         return new Builder();
@@ -91,6 +92,7 @@ public class Fs {
         private Ocr ocr = new Ocr();
         private ByteSizeValue ignoreAbove = null;
         private boolean followSymlinks = false;
+        private boolean skipTika = false;
 
         public Builder setUrl(String url) {
             this.url = url;
@@ -246,10 +248,15 @@ public class Fs {
             return this;
         }
 
+        public Builder setSkipTika(boolean skipTika) {
+            this.skipTika = skipTika;
+            return this;
+        }
+
         public Fs build() {
             return new Fs(url, updateRate, includes, excludes, filters, jsonSupport, filenameAsId, addFilesize,
                     removeDeleted, addAsInnerObject, storeSource, indexedChars, indexContent, attributesSupport, rawMetadata,
-                    checksum, xmlSupport, indexFolders, langDetect, continueOnError, ocr, ignoreAbove, followSymlinks);
+                    checksum, xmlSupport, indexFolders, langDetect, continueOnError, ocr, ignoreAbove, followSymlinks, skipTika);
         }
     }
 
@@ -260,7 +267,7 @@ public class Fs {
     private Fs(String url, TimeValue updateRate, List<String> includes, List<String> excludes, List<String> filters, boolean jsonSupport,
                boolean filenameAsId, boolean addFilesize, boolean removeDeleted, boolean addAsInnerObject, boolean storeSource,
                Percentage indexedChars, boolean indexContent, boolean attributesSupport, boolean rawMetadata, String checksum, boolean xmlSupport,
-               boolean indexFolders, boolean langDetect, boolean continueOnError, Ocr ocr, ByteSizeValue ignoreAbove, boolean followSymlinks) {
+               boolean indexFolders, boolean langDetect, boolean continueOnError, Ocr ocr, ByteSizeValue ignoreAbove, boolean followSymlinks, boolean skipTika) {
         this.url = url;
         this.updateRate = updateRate;
         this.includes = includes;
@@ -284,6 +291,7 @@ public class Fs {
         this.ocr = ocr;
         this.ignoreAbove = ignoreAbove;
         this.followSymlinks = followSymlinks;
+        this.skipTika = skipTika;
     }
 
     public String getUrl() {
@@ -478,6 +486,10 @@ public class Fs {
         this.ignoreAbove = ignoreAbove;
     }
 
+    public boolean isSkipTika() {
+        return skipTika;
+    }
+
     public boolean isFollowSymlinks() {
         return followSymlinks;
     }
@@ -548,6 +560,7 @@ public class Fs {
                 ", ocr=" + ocr +
                 ", ignoreAbove=" + ignoreAbove +
                 ", followSymlinks=" + followSymlinks +
+                ", skipTika=" + skipTika +
                 '}';
     }
 }

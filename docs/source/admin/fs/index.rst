@@ -19,6 +19,7 @@ The job file must comply to the following ``yaml`` specifications:
      add_filesize: true
      remove_deleted: true
      add_as_inner_object: false
+     skip_tika: false
      store_source: true
      index_content: true
      indexed_chars: "10000.0"

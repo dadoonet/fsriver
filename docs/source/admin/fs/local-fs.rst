@@ -54,6 +54,8 @@ Here is a list of Local FS settings (under ``fs.`` prefix)`:
 +----------------------------+-----------------------+---------------------------------+
 | ``fs.follow_symlinks``     | ``false``             | `Follow Symlinks`_              |
 +----------------------------+-----------------------+---------------------------------+
+| ``fs.skip_tika: true``     | ``false``             | `Skip tika parser`_             |
++----------------------------+-----------------------+---------------------------------+
 
 .. _root-directory:
 
@@ -749,3 +751,16 @@ If you want FSCrawler to follow the symbolic links, you need to be explicit abou
    name: "test"
    fs:
      follow_symlink: true
+
+Skip Tika
+^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.7
+
+If you want to skip Tika to parse your content you can. So contents will be indexed without getting parsed by tika.
+
+.. code:: yaml
+
+   name: "test"
+   fs:
+     skip_tika: true
