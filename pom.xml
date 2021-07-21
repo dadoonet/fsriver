@@ -41,7 +41,7 @@
         <elasticsearch6.version>6.8.17</elasticsearch6.version>
         <elasticsearch.version>${elasticsearch7.version}</elasticsearch.version>
 
-        <tika.version>1.27</tika.version>
+        <tika.version>2.0.0</tika.version>
         <jackson.version>2.12.4</jackson.version>
         <jsonpath.version>2.6.0</jsonpath.version>
         <slf4j.version>1.7.31</slf4j.version>
@@ -669,101 +669,27 @@
 
             <dependency>
                 <groupId>org.apache.tika</groupId>
-                <artifactId>tika-parsers</artifactId>
+                <artifactId>tika-parsers-standard-package</artifactId>
                 <version>${tika.version}</version>
-                <exclusions>
-                    <!-- Conflicting lib with log4j-slf4j-impl-2.11.1 -->
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                    <!-- org.slf4j:slf4j-api:1.7.25 -->
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-api</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>edu.ucar</groupId>
-                        <artifactId>netcdf</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>edu.ucar</groupId>
-                        <artifactId>cdm</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>edu.ucar</groupId>
-                        <artifactId>httpservices</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>edu.ucar</groupId>
-                        <artifactId>grib</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>edu.ucar</groupId>
-                        <artifactId>netcdf4</artifactId>
-                    </exclusion>
-                    <!-- Not Apache2 License compatible -->
-                    <exclusion>
-                        <groupId>com.uwyn</groupId>
-                        <artifactId>jhighlight</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-debug-all</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging-api</artifactId>
-                    </exclusion>
-                    <!-- Must be removed because it conflicts with Jersey (another JaxRS implementation) -->
-                    <exclusion>
-                        <groupId>org.apache.cxf</groupId>
-                        <artifactId>cxf-rt-rs-client</artifactId>
-                    </exclusion>
-                    <!-- com.google.guava:guava:27.0.1-jre vs com.google.guava:guava:28.0-jre -->
-                    <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
-            <!-- Add some optional dependencies -->
             <dependency>
-                <groupId>org.xerial</groupId>
-                <artifactId>sqlite-jdbc</artifactId>
-                <version>3.36.0.1</version>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-parser-scientific-module</artifactId>
+                <version>${tika.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-parser-sqlite3-module</artifactId>
+                <version>${tika.version}</version>
+            </dependency>
+            
+            <!-- Fix tika-parsers-standard-package 2.0.0 vs tika-parser-scientific-module:2.0.0 transitive dependency -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>1.7.31</version>
             </dependency>
 
-            <!--
-            For historical reasons (incompatible license), this dependency is not pulled by default although it is
-            now available under an Apache2 License. So we add it explicitly.
-            -->
-            <dependency>
-                <groupId>org.apache.pdfbox</groupId>
-                <artifactId>jbig2-imageio</artifactId>
-                <version>${imageio.version}</version>
-            </dependency>
-            <!--
-            For legal reasons (incompatible license), these dependencies are to marked as optional so users who might want
-            to use them have to provided them manually in the lib dir.
-            -->
-            <dependency>
-                <groupId>com.github.jai-imageio</groupId>
-                <artifactId>jai-imageio-core</artifactId>
-                <version>${tiff.version}</version>
-                <optional>true</optional>
-            </dependency>
-            <dependency>
-                <groupId>com.github.jai-imageio</groupId>
-                <artifactId>jai-imageio-jpeg2000</artifactId>
-                <version>${jpeg.version}</version>
-                <optional>true</optional>
-            </dependency>
             <!-- Fix json-path 2.6.0 vs tika 1.27 transitive dependency -->
             <dependency>
                 <groupId>org.ow2.asm</groupId>
@@ -771,29 +697,34 @@
                 <version>9.2</version>
             </dependency>
 
+            <!-- For CVE. Comes from tika-parser-scientific-module:2.0.0
+[INFO] |  +- edu.ucar:netcdf4:jar:4.5.5:compile
+[INFO] |  |  \- edu.ucar:cdm:jar:4.5.5:compile
+[INFO] |  |     +- edu.ucar:udunits:jar:4.5.5:compile
+[INFO] |  |     +- edu.ucar:httpservices:jar:4.5.5:compile
+[INFO] |  |     |  \- org.apache.httpcomponents:httpmime:jar:4.5.13:compile
+[INFO] |  |     +- joda-time:joda-time:jar:2.2:compile
+[INFO] |  |     +- org.quartz-scheduler:quartz:jar:2.2.0:compile
+[INFO] |  |     |  \- c3p0:c3p0:jar:0.9.1.1:compile
+            -->
+            <dependency>
+                <groupId>org.quartz-scheduler</groupId>
+                <artifactId>quartz</artifactId>
+                <version>2.3.2</version>
+            </dependency>
+            
             <!-- For Language detection -->
             <dependency>
                 <groupId>org.apache.tika</groupId>
-                <artifactId>tika-langdetect</artifactId>
+                <artifactId>tika-langdetect-tika</artifactId>
                 <version>${tika.version}</version>
-                <exclusions>
-                    <!-- Must be removed because it conflicts with Jersey (another JaxRS implementation) -->
-                    <exclusion>
-                        <groupId>org.apache.cxf</groupId>
-                        <artifactId>cxf-rt-rs-client</artifactId>
-                    </exclusion>
-                    <!-- org.slf4j:slf4j-api:1.7.25 -->
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-api</artifactId>
-                    </exclusion>
-                    <!-- com.google.guava:guava:27.0.1-jre vs com.google.guava:guava:28.0-jre -->
-                    <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-langdetect-optimaize</artifactId>
+                <version>${tika.version}</version>
+            </dependency>
+
             <!--Dependency for parsing remote ssh directory [http://www.jcraft.com/jsch/]-->
             <dependency>
                 <groupId>com.jcraft</groupId>

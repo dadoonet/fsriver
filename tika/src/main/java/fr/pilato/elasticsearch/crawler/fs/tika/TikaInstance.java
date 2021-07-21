@@ -25,6 +25,7 @@ import fr.pilato.elasticsearch.crawler.fs.settings.FsSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.config.ServiceLoader;
+import org.apache.tika.exception.TikaConfigException;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.exception.ZeroByteFileException;
 import org.apache.tika.language.detect.LanguageDetector;
@@ -46,7 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 
-import static org.apache.tika.langdetect.OptimaizeLangDetector.getDefaultLanguageDetector;
+import static org.apache.tika.langdetect.optimaize.OptimaizeLangDetector.getDefaultLanguageDetector;
 
 /**
  *
@@ -58,6 +59,7 @@ public class TikaInstance {
     private static Parser parser;
     private static ParseContext context;
     private static LanguageDetector detector;
+    private static boolean ocrActivated = false;
 
     /* For tests only */
     public static void reloadTika() {
@@ -78,6 +80,7 @@ public class TikaInstance {
         if (parser == null) {
             PDFParser pdfParser = new PDFParser();
             DefaultParser defaultParser;
+            TesseractOCRParser ocrParser = null;
 
             if (!fs.getOcr().isEnabled()) {
                 logger.debug("OCR is disabled. Even though it's detected, it must be disabled explicitly");
@@ -87,11 +90,27 @@ public class TikaInstance {
                         Collections.singletonList(TesseractOCRParser.class));
             } else {
                 logger.debug("OCR is activated.");
-                if (ExternalParser.check("tesseract")) {
-                    logger.debug("OCR strategy for PDF documents is [{}] and tesseract was found.", fs.getOcr().getPdfStrategy());
-                    pdfParser.setOcrStrategy(fs.getOcr().getPdfStrategy());
-                } else {
-                    logger.debug("But Tesseract is not installed so we won't run OCR.");
+                ocrParser = new TesseractOCRParser();
+                if (fs.getOcr().getPath() != null) {
+                    logger.debug("Tesseract Path set to [{}].", fs.getOcr().getPath());
+                    ocrParser.setTesseractPath(fs.getOcr().getPath());
+                }
+                if (fs.getOcr().getDataPath() != null) {
+                    logger.debug("Tesseract Data Path set to [{}].", fs.getOcr().getDataPath());
+                    ocrParser.setTessdataPath(fs.getOcr().getDataPath());
+                }
+                try {
+                    if (ocrParser.hasTesseract()) {
+                        logger.debug("OCR strategy for PDF documents is [{}] and tesseract was found.", fs.getOcr().getPdfStrategy());
+                        pdfParser.setOcrStrategy(fs.getOcr().getPdfStrategy());
+                        ocrActivated = true;
+                    } else {
+                        logger.debug("But Tesseract is not installed so we won't run OCR.");
+                        pdfParser.setOcrStrategy("no_ocr");
+                    }
+                } catch (TikaConfigException e) {
+                    logger.error("Tesseract is not correctly set up so we won't run OCR. Error is: {}", e.getMessage());
+                    logger.debug("Fullstack trace error for Tesseract", e);
                     pdfParser.setOcrStrategy("no_ocr");
                 }
                 defaultParser = new DefaultParser(
@@ -100,7 +119,11 @@ public class TikaInstance {
                         Collections.singletonList(PDFParser.class));
             }
 
-            parser = new AutoDetectParser(defaultParser, pdfParser);
+            if (ocrActivated) {
+                parser = new AutoDetectParser(defaultParser, pdfParser, ocrParser);
+            } else {
+                parser = new AutoDetectParser(defaultParser, pdfParser);
+            }
         }
 
     }
@@ -109,17 +132,9 @@ public class TikaInstance {
         if (context == null) {
             context = new ParseContext();
             context.set(Parser.class, parser);
-            if (fs.getOcr().isEnabled()) {
+            if (ocrActivated) {
                 logger.debug("OCR is activated so we need to configure Tesseract in case we have specific settings.");
                 TesseractOCRConfig config = new TesseractOCRConfig();
-                if (fs.getOcr().getPath() != null) {
-                    logger.debug("Tesseract Path set to [{}].", fs.getOcr().getPath());
-                    config.setTesseractPath(fs.getOcr().getPath());
-                }
-                if (fs.getOcr().getDataPath() != null) {
-                    logger.debug("Tesseract Data Path set to [{}].", fs.getOcr().getDataPath());
-                    config.setTessdataPath(fs.getOcr().getDataPath());
-                }
                 logger.debug("Tesseract Language set to [{}].", fs.getOcr().getLanguage());
                 config.setLanguage(fs.getOcr().getLanguage());
                 if (fs.getOcr().getOutputType() != null) {
@@ -138,10 +153,7 @@ public class TikaInstance {
         try (stream) {
             parser.parse(stream, new BodyContentHandler(handler), metadata, context);
         } catch (SAXException e) {
-            if (!handler.isWriteLimitReached(e)) {
-                // This should never happen with BodyContentHandler...
-                throw new TikaException("Unexpected SAX processing failure", e);
-            }
+            throw new TikaException("Unexpected SAX processing failure", e);
         } catch (ZeroByteFileException e) {
             String resourceName = metadata.get("resourceName");
             logger.debug("Got an empty file for {}, so we are just skipping it.", resourceName);

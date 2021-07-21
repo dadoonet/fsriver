@@ -31,24 +31,6 @@
             <groupId>fr.pilato.elasticsearch.crawler</groupId>
             <artifactId>fscrawler-test-documents</artifactId>
         </dependency>
-
-        <!--
-        For legal reasons (incompatible license), these dependencies are to marked as optional so users who might want
-        to use them have to provided them manually in the lib dir.
-        -->
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>jbig2-imageio</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-jpeg2000</artifactId>
-        </dependency>
-
     </dependencies>
 
     <build>

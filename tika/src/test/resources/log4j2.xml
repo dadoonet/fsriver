@@ -9,10 +9,8 @@
       </Console>
    </Appenders>
    <Loggers>
-      <Logger name="fr.pilato.elasticsearch.crawler.fs" level="info" additivity="false">
-         <AppenderRef ref="CONSOLE"/>
-      </Logger>
       <Logger name="fr.pilato.elasticsearch.crawler.fs.tika" level="info" additivity="false">
+         <AppenderRef ref="CONSOLE"/>
          <AppenderRef ref="CONSOLE_NO_DECORATOR"/>
       </Logger>
       <Logger name="org.apache.tika" level="error" additivity="false">

@@ -86,42 +86,6 @@
             <artifactId>fscrawler-workplacesearch-client</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parsers</artifactId>
-        </dependency>
-        <!-- Add some optional dependencies -->
-        <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-        </dependency>
-
-        <!--
-        For legal reasons (incompatible license), these dependencies are to marked as optional so users who might want
-        to use them have to provided them manually in the lib dir.
-        -->
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>jbig2-imageio</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-core</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-jpeg2000</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- For Language detection -->
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-langdetect</artifactId>
-        </dependency>
-
         <!-- For REST Server -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
