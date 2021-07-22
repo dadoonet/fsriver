@@ -34,6 +34,16 @@ public class FSCrawlerLogger {
      */
     private final static Logger documentLogger = LogManager.getLogger("fscrawler.document");
 
+    /**
+     * This logger is used to help writing the test cases
+     */
+    private final static Logger metadataLogger = LogManager.getLogger("fscrawler.metadata");
+
+    /**
+     * Print something to the console
+     * @param message   message to print
+     * @param params    parameters if any
+     */
     public static void console(String message, Object... params) {
         consoleLogger.info(message, params);
     }
@@ -56,5 +66,14 @@ public class FSCrawlerLogger {
      */
     public static void documentError(String id, String path, String error) {
         documentLogger.error("[{}][{}] {}", id, path, error);
+    }
+
+    /**
+     * Print the metadata in an useful format so they can be easily used in tests
+     * @param message   message to print
+     * @param params    parameters if any
+     */
+    public static void metadata(String message, Object... params) {
+        metadataLogger.debug(message, params);
     }
 }

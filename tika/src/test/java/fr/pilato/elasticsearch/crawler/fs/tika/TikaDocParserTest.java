@@ -23,6 +23,8 @@ import fr.pilato.elasticsearch.crawler.fs.beans.Doc;
 import fr.pilato.elasticsearch.crawler.fs.settings.Fs;
 import fr.pilato.elasticsearch.crawler.fs.settings.FsSettings;
 import fr.pilato.elasticsearch.crawler.fs.settings.Ocr;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.parser.external.ExternalParser;
 import org.junit.Test;
 
@@ -37,6 +39,7 @@ import java.util.Map;
 import static fr.pilato.elasticsearch.crawler.fs.framework.FsCrawlerUtil.localDateTimeToDate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
@@ -415,7 +418,7 @@ public class TikaDocParserTest extends DocParserTestCase {
         assertThat(raw, hasEntry("dc:creator", "David Pilato"));
         assertThat(raw, hasEntry("extended-properties:Company", "elastic"));
         assertThat(raw, hasEntry("resourceName", "test.rtf"));
-        assertThat(raw, hasEntry("dcterms:created", "2016-07-07T13:38:00Z"));
+        assertThat(raw, hasEntry(is("dcterms:created"), startsWith("2016-07-0")));
         assertThat(raw, hasEntry("meta:character-count", "68"));
         assertThat(raw, hasEntry("X-TIKA:Parsed-By", "org.apache.tika.parser.DefaultParser"));
         assertThat(raw, hasEntry("dc:title", "Test Tika title"));
