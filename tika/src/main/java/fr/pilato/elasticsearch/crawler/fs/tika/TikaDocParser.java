@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.language.detect.LanguageResult;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.Office;
 import org.apache.tika.metadata.Property;
 import org.apache.tika.metadata.TikaCoreProperties;
 
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static fr.pilato.elasticsearch.crawler.fs.framework.FSCrawlerLogger.*;
 import static fr.pilato.elasticsearch.crawler.fs.framework.FsCrawlerUtil.computeVirtualPathName;
 import static fr.pilato.elasticsearch.crawler.fs.tika.TikaInstance.extractText;
 import static fr.pilato.elasticsearch.crawler.fs.tika.TikaInstance.langDetector;
@@ -73,7 +75,7 @@ public class TikaDocParser {
             }
         }
         Metadata metadata = new Metadata();
-        metadata.set(Metadata.RESOURCE_NAME_KEY, filename);
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
 
         String parsedContent = null;
 
@@ -148,7 +150,7 @@ public class TikaDocParser {
             setMeta(fullFilename, metadata, TikaCoreProperties.CREATOR, doc.getMeta()::setAuthor, Function.identity());
             setMeta(fullFilename, metadata, TikaCoreProperties.TITLE, doc.getMeta()::setTitle, Function.identity());
             setMeta(fullFilename, metadata, TikaCoreProperties.MODIFIED, doc.getMeta()::setDate, FsCrawlerUtil::localDateTimeToDate);
-            setMeta(fullFilename, metadata, TikaCoreProperties.KEYWORDS, doc.getMeta()::setKeywords, TikaDocParser::commaDelimitedListToStringArray);
+            setMeta(fullFilename, metadata, Office.KEYWORDS, doc.getMeta()::setKeywords, TikaDocParser::commaDelimitedListToStringArray);
             setMeta(fullFilename, metadata, TikaCoreProperties.FORMAT, doc.getMeta()::setFormat, Function.identity());
             setMeta(fullFilename, metadata, TikaCoreProperties.IDENTIFIER, doc.getMeta()::setIdentifier, Function.identity());
             setMeta(fullFilename, metadata, TikaCoreProperties.CONTRIBUTOR, doc.getMeta()::setContributor, Function.identity());
@@ -187,13 +189,13 @@ public class TikaDocParser {
             // Add support for more OOTB standard metadata
 
             if (fsSettings.getFs().isRawMetadata()) {
-                logger.trace("Listing all available metadata:");
-                logger.trace("  assertThat(raw.entrySet(), iterableWithSize({}));", metadata.size());
+                metadata("Listing all available metadata:");
+                metadata("  assertThat(raw.entrySet(), iterableWithSize({}));", metadata.size());
                 for (String metadataName : metadata.names()) {
                     String value = metadata.get(metadataName);
                     // This is a logger trick which helps to generate our unit tests
                     // You need to change test/resources/log4j2.xml fr.pilato.elasticsearch.crawler.fs.tika level to trace
-                    logger.trace("  assertThat(raw, hasEntry(\"{}\", \"{}\"));", metadataName, value);
+                    metadata("  assertThat(raw, hasEntry(\"{}\", \"{}\"));", metadataName, value);
 
                     // We need to remove dots in field names if any. See https://github.com/dadoonet/fscrawler/issues/256
                     doc.getMeta().addRaw(metadataName.replaceAll("\\.", ":"), value);

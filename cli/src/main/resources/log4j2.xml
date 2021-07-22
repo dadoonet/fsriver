@@ -5,6 +5,8 @@
       <Property name="LOG_LEVEL">info</Property>
       <!-- If you want to change the log level for documents.log file -->
       <Property name="DOC_LEVEL">info</Property>
+      <!-- If you want to change the log level for metadata in documents.log file. Set it to trace. -->
+      <Property name="METADATA_LEVEL">info</Property>
       <!-- If you want to change the output dir for logs -->
       <Property name="LOG_DIR">$${log4j:configParentLocation}/../logs</Property>
    </Properties>
@@ -43,6 +45,9 @@
       <!-- This logger is used to trace all information about documents -->
       <Logger name="fscrawler.document" level="${sys:DOC_LEVEL}" additivity="false">
          <AppenderRef ref="Documents" />
+      </Logger>
+      <Logger name="fscrawler.metadata" level="${sys:METADATA_LEVEL}" additivity="false">
+         <AppenderRef ref="Documents"/>
       </Logger>
 
       <!-- This logger is used to log FSCrawler code execution -->
