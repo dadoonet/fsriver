@@ -35,7 +35,6 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.apache.tika.parser.external.ExternalParser;
 import org.apache.tika.parser.ocr.TesseractOCRConfig;
 import org.apache.tika.parser.ocr.TesseractOCRParser;
 import org.apache.tika.parser.pdf.PDFParser;
@@ -45,6 +44,7 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.apache.tika.langdetect.optimaize.OptimaizeLangDetector.getDefaultLanguageDetector;
@@ -65,6 +65,7 @@ public class TikaInstance {
     public static void reloadTika() {
         parser = null;
         context = null;
+        ocrActivated = false;
     }
 
     /**
@@ -72,23 +73,19 @@ public class TikaInstance {
      * @param fs fs settings
      */
     private static void initTika(Fs fs) {
-        initParser(fs);
         initContext(fs);
+        initParser(fs);
     }
 
     private static void initParser(Fs fs) {
         if (parser == null) {
             PDFParser pdfParser = new PDFParser();
             DefaultParser defaultParser;
-            TesseractOCRParser ocrParser = null;
+            TesseractOCRParser ocrParser;
 
-            if (!fs.getOcr().isEnabled()) {
-                logger.debug("OCR is disabled. Even though it's detected, it must be disabled explicitly");
-                defaultParser = new DefaultParser(
-                        MediaTypeRegistry.getDefaultRegistry(),
-                        new ServiceLoader(),
-                        Collections.singletonList(TesseractOCRParser.class));
-            } else {
+            ocrActivated = fs.getOcr().isEnabled();
+
+            if (ocrActivated) {
                 logger.debug("OCR is activated.");
                 ocrParser = new TesseractOCRParser();
                 if (fs.getOcr().getPath() != null) {
@@ -103,29 +100,41 @@ public class TikaInstance {
                     if (ocrParser.hasTesseract()) {
                         logger.debug("OCR strategy for PDF documents is [{}] and tesseract was found.", fs.getOcr().getPdfStrategy());
                         pdfParser.setOcrStrategy(fs.getOcr().getPdfStrategy());
-                        ocrActivated = true;
                     } else {
                         logger.debug("But Tesseract is not installed so we won't run OCR.");
+                        ocrActivated = false;
                         pdfParser.setOcrStrategy("no_ocr");
                     }
                 } catch (TikaConfigException e) {
-                    logger.error("Tesseract is not correctly set up so we won't run OCR. Error is: {}", e.getMessage());
+                    logger.debug("Tesseract is not correctly set up so we won't run OCR. Error is: {}", e.getMessage());
                     logger.debug("Fullstack trace error for Tesseract", e);
+                    ocrActivated = false;
                     pdfParser.setOcrStrategy("no_ocr");
                 }
+            }
+
+            if (ocrActivated) {
+                logger.info("OCR is enabled. This might slowdown the process.");
+                // We are excluding the pdf parser as we built one that we want to use instead.
                 defaultParser = new DefaultParser(
                         MediaTypeRegistry.getDefaultRegistry(),
                         new ServiceLoader(),
                         Collections.singletonList(PDFParser.class));
-            }
-
-            if (ocrActivated) {
-                parser = new AutoDetectParser(defaultParser, pdfParser, ocrParser);
             } else {
-                parser = new AutoDetectParser(defaultParser, pdfParser);
+                logger.info("OCR is disabled.");
+                TesseractOCRConfig config = context.get(TesseractOCRConfig.class);
+                if (config != null) {
+                    config.setSkipOcr(true);
+                }
+                // We are excluding the pdf parser as we built one that we want to use instead
+                // and the OCR Parser as it's explicitly disabled.
+                defaultParser = new DefaultParser(
+                        MediaTypeRegistry.getDefaultRegistry(),
+                        new ServiceLoader(),
+                        Arrays.asList(PDFParser.class, TesseractOCRParser.class));
             }
+            parser = new AutoDetectParser(defaultParser, pdfParser);
         }
-
     }
 
     private static void initContext(Fs fs) {

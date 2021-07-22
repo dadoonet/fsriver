@@ -628,7 +628,7 @@ public class TikaDocParserTest extends DocParserTestCase {
         doc = extractFromFile("test-ocr.png", fsSettings);
         assertThat(doc.getContent(), isEmptyString());
         doc = extractFromFile("test-ocr.pdf", fsSettings);
-        assertThat(doc.getContent(), nullValue());
+        assertThat(doc.getContent(), not(containsString("This file contains some words.")));
 
         // Test with OCR On with hocr output type
         fsSettings = FsSettings.builder(getCurrentTestName())
